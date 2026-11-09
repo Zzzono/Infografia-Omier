@@ -1,642 +1,269 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="es" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Integral Definida en la Ingeniería Industrial</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Base & Hide Default Cursor */
-        body {
-            background-color: #030305;
-            color: #ffffff;
-            margin: 0;
-            overflow-x: hidden;
-            font-family: 'Inter', sans-serif;
-            cursor: none; /* Custom cursor */
-        }
-        
-        a, button, input, .interactive-zone {
-            cursor: none;
-        }
-
-        /* Custom Cursor Elements */
-        #cursor-dot {
-            position: fixed;
-            top: 0; left: 0;
-            width: 8px; height: 8px;
-            background-color: #00f0ff;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 9999;
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
-        }
-
-        #cursor-aura {
-            position: fixed;
-            top: 0; left: 0;
-            width: 40px; height: 40px;
-            border: 1px solid rgba(0, 240, 255, 0.5);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 9998;
-            transition: width 0.3s, height 0.3s, border-color 0.3s, background-color 0.3s;
-        }
-
-        .cursor-hover #cursor-dot {
-            width: 12px; height: 12px;
-            background-color: #d946ef;
-        }
-        .cursor-hover #cursor-aura {
-            width: 60px; height: 60px;
-            border-color: rgba(217, 70, 239, 0.6);
-            background-color: rgba(217, 70, 239, 0.1);
-        }
-
-        /* Hide custom cursor on mobile */
-        @media (max-width: 768px) {
-            body, a, button, input, .interactive-zone { cursor: auto; }
-            #cursor-dot, #cursor-aura { display: none; }
-        }
-
-        /* Canvas Background */
-        #bg-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        /* Glassmorphism */
-        .glass-panel {
-            background: rgba(15, 15, 20, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            border-left: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-            transform-style: preserve-3d;
-            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .glass-panel::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 20px;
-            padding: 2px;
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(217, 70, 239, 0.4));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .glass-panel:hover::before {
-            opacity: 1;
-        }
-
-        /* Neon Text */
-        .neon-cyan {
-            color: #00f0ff;
-            text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
-        }
-        .neon-magenta {
-            color: #d946ef;
-            text-shadow: 0 0 15px rgba(217, 70, 239, 0.6);
-        }
-        .math-font {
-            font-family: 'Times New Roman', Times, serif;
-            font-style: italic;
-        }
-
-        /* Scroll Animations */
-        .reveal {
-            opacity: 0;
-            transform: translateY(50px) scale(0.98);
-            transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            will-change: opacity, transform;
-        }
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
-        /* Custom Range Slider */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-            margin: 20px 0;
-        }
-        input[type=range]:focus { outline: none; }
-        
-        /* Webkit Slider */
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        input[type=range]::-webkit-slider-thumb {
-            height: 24px; width: 24px;
-            border-radius: 50%;
-            background: #ffffff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
-            -webkit-appearance: none;
-            margin-top: -10px;
-            transition: transform 0.1s;
-        }
-        input[type=range].slider-cyan::-webkit-slider-thumb {
-            background: #00f0ff;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
-        }
-        input[type=range].slider-magenta::-webkit-slider-thumb {
-            background: #d946ef;
-            box-shadow: 0 0 20px rgba(217, 70, 239, 0.8);
-        }
-        input[type=range]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        /* Mozilla Slider */
-        input[type=range]::-moz-range-track {
-            width: 100%; height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-        input[type=range]::-moz-range-thumb {
-            height: 24px; width: 24px;
-            border-radius: 50%; border: none;
-        }
-        input[type=range].slider-cyan::-moz-range-thumb { background: #00f0ff; box-shadow: 0 0 20px rgba(0, 240, 255, 0.8); }
-        input[type=range].slider-magenta::-moz-range-thumb { background: #d946ef; box-shadow: 0 0 20px rgba(217, 70, 239, 0.8); }
-
-        .canvas-container {
-            width: 100%;
-            height: 280px;
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .canvas-container canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Integral Definida en Ingeniería Industrial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F7F6;--card:#FFFFFF;--ink:#14283A;--mute:#52667A;--line:#C9D6D3;--curve:#0C7C86;--sec:#E4572E;--tan:#6A4BC2;--soft:#DDEAE8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.1;margin:0}
+h1{font-size:clamp(24px,4vw,38px);font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.author{font-weight:600;color:var(--curve);font-size:16px;margin-bottom:12px;display:block}
+.lead{color:var(--mute);max-width:70ch;margin:0 0 20px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.tabs button{font:500 15px "IBM Plex Sans",sans-serif;padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;transition:all .2s}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--tan);outline-offset:2px}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:850px){.main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.03)}
+.card h2{font-size:18px;margin-bottom:4px}
+.sub{color:var(--mute);font-size:13.5px;margin:0 0 12px}
+svg{width:100%;height:auto;display:block;background:#FAFCFB;border:1px solid var(--line);border-radius:8px;margin-bottom:12px}
+.ax text{fill:var(--mute);font:11px "IBM Plex Sans",sans-serif}
+.grid line{stroke:var(--line);stroke-width:1;stroke-dasharray:4 4}
+#curve1,#curve2{fill:none;stroke:var(--curve);stroke-width:3;stroke-linecap:round}
+.rect{fill:var(--sec);fill-opacity:0.2;stroke:var(--sec);stroke-width:1.5}
+.fill-area{fill:var(--curve);fill-opacity:0.1}
+.lbl{font:600 12px "IBM Plex Sans",sans-serif}
+.ctl{display:grid;gap:10px}
+.ctl label{display:flex;justify-content:space-between;font-size:14px;color:var(--mute)}
+.ctl b{color:var(--ink);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--curve);height:24px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{font:500 14px "IBM Plex Sans",sans-serif;padding:8px 16px;border-radius:8px;border:0;background:var(--sec);color:#fff;cursor:pointer;flex:1}
+.btn.alt{background:var(--soft);color:var(--ink)}
+.big{display:flex;gap:10px;margin-bottom:12px}
+.big div{flex:1;border-radius:10px;padding:12px;background:var(--soft)}
+.big small{display:block;color:var(--mute);font-size:12.5px;line-height:1.2}
+.big strong{font:800 24px "Bricolage Grotesque",sans-serif;display:block;line-height:1.1;margin-top:6px}
+.big .s strong{color:var(--sec)}
+.big .t strong{color:var(--curve)}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+@media(max-width:850px){.three{grid-template-columns:1fr}}
+.three .card h3{font-size:17px;margin-bottom:8px;color:var(--ink)}
+.three p{margin:0 0 10px;font-size:14.5px;color:var(--mute)}
+.formula{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:850px){.formula{grid-template-columns:1fr}}
+.formula code{display:block;font:600 16px "IBM Plex Sans",sans-serif;margin:8px 0;color:var(--tan);background:var(--bg);padding:8px 12px;border-radius:6px;border:1px solid var(--line)}
+.pop{animation:pop .4s ease}
+@keyframes pop{from{opacity:.2;transform:translateY(5px)}to{opacity:1;transform:none}}
+</style>
 </head>
-<body class="antialiased selection:bg-[#00f0ff] selection:text-black">
+<body>
+<div class="wrap">
+  <h1>Aplicación de la Integral Definida</h1>
+  <span class="author">Por: Carlos Andrés Omier — Ingeniería Industrial</span>
+  <p class="lead">Explora cómo la acumulación de cantidades continuas permite medir volúmenes de producción, proyecciones de costos y consumo energético. Ajusta el intervalo (b) y la precisión matemática (n) en tiempo real.</p>
+  <div class="tabs" id="tabs" role="group"></div>
+  <div class="main">
+    <div class="card">
+      <h2 id="ttl1"></h2>
+      <p class="sub">Interpretación geométrica: Área bajo la curva usando sumas de Riemann.</p>
+      <svg id="svg1" viewBox="0 0 500 300"></svg>
+      <div class="ctl">
+        <label for="b">Límite superior de integración (b) <b id="bv"></b></label>
+        <input type="range" id="b" min="0" max="1000" value="700">
+        <label for="n">Número de rectángulos (Precisión n) <b id="nv"></b></label>
+        <input type="range" id="n" min="1" max="100" value="5">
+        <div class="row">
+          <button class="btn" id="playN">Animar Precisión (n → ∞)</button>
+          <button class="btn alt" id="playB">Animar Acumulación</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Acumulación Total F(x)</h2>
+      <p class="sub">La función integral mostrando el valor real acumulado a lo largo del eje X.</p>
+      <svg id="svg2" viewBox="0 0 500 300"></svg>
+      <div class="big">
+        <div class="s"><small>Cálculo Aproximado (Riemann)</small><strong id="v_aprox"></strong><span id="u_aprox" style="font-size:12px;color:var(--mute)"></span></div>
+        <div class="t"><small>Integral Exacta (Definida)</small><strong id="v_exact"></strong><span id="u_exact" style="font-size:12px;color:var(--mute)"></span></div>
+      </div>
+      <p class="sub" style="margin-top:8px">Margen de error actual: <b id="v_err" style="color:var(--sec)"></b></p>
+    </div>
+  </div>
+  <div class="three">
+    <div class="card"><h3>Modelo Matemático</h3><p id="c_mod"></p></div>
+    <div class="card"><h3>Análisis de Resultados</h3><p id="c_ana"></p></div>
+    <div class="card"><h3>Decisión Industrial</h3><p id="c_dec"></p></div>
+  </div>
+  <div class="formula">
+    <div class="card"><h3>Interpretación Geométrica</h3><code>A ≈ Σ f(x_i) Δx</code>Suma del área de (n) rectángulos. A medida que (n) crece, el ancho (Δx) tiende a cero, acercándose al área real.</div>
+    <div class="card"><h3>Teorema Fundamental</h3><code>∫ f(x) dx = F(b) - F(a)</code>La integral definida en el intervalo [a, b] calcula la acumulación total exacta y continua del modelo analizado.</div>
+  </div>
+</div>
+<script>
+const E=i=>document.getElementById(i);
+const fm=(v,d=2)=>v.toLocaleString('es',{minimumFractionDigits:d,maximumFractionDigits:d});
+const SC=[
+{k:'Producción',t1:'Tasa de Producción f(t)',xn:'Tiempo',xu:'h',yn:'Velocidad',yu:'und/h',yn2:'Unidades',yu2:'und',
+ f:t=>100+20*t-1.5*t**2, F:t=>100*t+10*t**2-0.5*t**3,
+ a:0,xMax:12,b:8,n:6,
+ mod:'f(t) = 100 + 20t - 1.5t². Representa la velocidad a la que la maquinaria produce unidades por hora.',
+ ana:(b,v)=>`Al integrar la función de 0 a ${fm(b,1)} horas, obtenemos un volumen total de producción de ${fm(v,0)} unidades acumuladas.`,
+ dec:(b,v)=>v>1500?'Meta superada: Iniciar protocolo de paletizado y almacenamiento.':'Producción en curso: Mantener el flujo continuo en la banda transportadora.'},
+{k:'Energía',t1:'Consumo de Potencia f(t)',xn:'Tiempo',xu:'h',yn:'Potencia',yu:'kW',yn2:'Energía',yu2:'kWh',
+ f:t=>150+100*Math.sin(Math.PI*t/12), F:t=>150*t-(1200/Math.PI)*Math.cos(Math.PI*t/12),
+ a:0,xMax:24,b:12,n:8,
+ mod:'f(t) = 150 + 100·sen(πt/12). Modela la demanda de potencia eléctrica de los hornos industriales a lo largo del día.',
+ ana:(b,v)=>`El área bajo la curva desde el inicio hasta la hora ${fm(b,1)} equivale a un consumo energético exacto de ${fm(v,1)} kWh.`,
+ dec:(b,v)=>v>2000?'Consumo crítico: Activar generadores de respaldo para evitar sobrecarga en la red.':'Consumo estable: La subestación principal opera dentro de los márgenes seguros.'},
+{k:'Costos',t1:'Costo Marginal f(x)',xn:'Unidades',xu:'k-und',yn:'Costo',yu:'$/und',yn2:'Costo Total',yu2:'$',
+ f:x=>50+5*Math.exp(0.2*x), F:x=>50*x+25*Math.exp(0.2*x),
+ a:0,xMax:20,b:15,n:10,
+ mod:'f(x) = 50 + 5e^(0.2x). Representa el costo adicional de ensamblar cada lote de mil unidades extra.',
+ ana:(b,v)=>`Al aplicar la integral definida para los primeros ${fm(b,1)} mil lotes, el costo operativo acumulado suma ${fm(v,2)} dólares.`,
+ dec:(b,v)=>v>1500?'Presupuesto límite: Optimizar la cadena de suministro antes de producir el siguiente lote.':'Margen operativo saludable: Autorizar la continuación del ensamble.'},
+{k:'Mecánica',t1:'Fuerza Ejercida f(x)',xn:'Distancia',xu:'m',yn:'Fuerza',yu:'N',yn2:'Trabajo',yu2:'Joules',
+ f:x=>300-10*x, F:x=>300*x-5*x**2,
+ a:0,xMax:25,b:18,n:5,
+ mod:'f(x) = 300 - 10x. Modela la fuerza variable que aplica un pistón neumático al mover material a lo largo de un riel.',
+ ana:(b,v)=>`El trabajo mecánico total realizado al desplazar la carga ${fm(b,1)} metros es la integral de la fuerza, resultando en ${fm(v,0)} Joules.`,
+ dec:(b,v)=>v>3000?'Límite térmico del pistón: Programar ciclo de enfriamiento.':'Operación normal: El sistema neumático tiene presión suficiente para continuar.'}
+];
+let cur=0,B=8,N=6,animN=null,animB=null,sc;
+const W=500,H=300,m={l:55,r:20,t:20,b:40};
+const tabs=E('tabs');
+SC.forEach((s,i)=>{const b=document.createElement('button');b.textContent=s.k;b.onclick=()=>pick(i);tabs.appendChild(b)});
 
-    <div id="cursor-dot"></div>
-    <div id="cursor-aura"></div>
-    <canvas id="bg-canvas"></canvas>
+function getMinMax(f,a,b,steps){let lo=1e9,hi=-1e9;for(let i=0;i<=steps;i++){const v=f(a+(b-a)*(i/steps));lo=Math.min(lo,v);hi=Math.max(hi,v)}return[lo,hi]}
 
-    <main class="max-w-7xl mx-auto px-5 py-24 space-y-40">
-        
-        <!-- Header -->
-        <header class="min-h-[70vh] flex flex-col justify-center items-center text-center reveal active">
-            <h1 class="text-5xl md:text-8xl font-bold tracking-tighter mb-8 leading-tight">
-                La Integral <br>
-                <span class="neon-cyan">Definida</span>
-            </h1>
-            
-            <div class="glass-panel p-8 px-16 inline-block tilt-element mt-10">
-                <p class="text-gray-400 text-xs font-bold tracking-[0.3em] uppercase mb-3">Autor</p>
-                <p class="text-3xl font-bold text-white mb-6">Carlos Omier</p>
-                <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-[#d946ef] to-transparent opacity-70 mb-6"></div>
-                <p class="neon-magenta font-semibold tracking-widest text-lg uppercase">Ingeniería Industrial</p>
-            </div>
-        </header>
+function pick(i){
+  stopAll();cur=i;sc=SC[i];B=sc.b;N=sc.n;
+  [...tabs.children].forEach((btn,j)=>btn.setAttribute('aria-pressed',j===i));
+  E('ttl1').textContent=sc.t1;
+  E('b').value=(B/sc.xMax)*1000;E('n').value=N;
+  document.querySelectorAll('.three .card, .big').forEach(e=>{e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop')});
+  draw();
+}
 
-        <!-- Sección 1: Interpretación Geométrica -->
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center reveal">
-            <div class="lg:col-span-5 space-y-8">
-                <div class="inline-flex items-center space-x-3 bg-white/5 border border-white/10 px-5 py-2 rounded-full">
-                    <div class="w-2.5 h-2.5 bg-white rounded-full shadow-[0_0_10px_#fff]"></div>
-                    <span class="text-white text-xs font-bold uppercase tracking-[0.2em]">Fundamento</span>
-                </div>
-                <h2 class="text-4xl md:text-5xl font-bold">Interpretación Geométrica</h2>
-                <p class="text-gray-400 leading-relaxed text-lg font-light">
-                    Representa el área exacta contenida entre la gráfica de una función <span class="math-font text-white text-xl">f(x)</span>, el eje de abscisas y los límites de integración. Es la herramienta matemática definitiva para cuantificar la acumulación continua de magnitudes.
-                </p>
-                <div class="glass-panel p-6 tilt-element border-l-4 border-l-white">
-                    <p class="text-center text-2xl math-font text-white">
-                        Área = <span class="text-4xl align-middle">∫</span><sub class="text-sm">a</sub><sup class="text-sm">b</sup> f(x) dx
-                    </p>
-                </div>
-            </div>
+function drawSvg(id, fn, yn, yu, isAcum, boundB, rectN){
+  const svg=E(id);
+  const [minY1, maxY1] = getMinMax(fn, sc.a, sc.xMax, 100);
+  const pY = (maxY1 - Math.min(0, minY1)) * 0.15;
+  const y0 = Math.min(0, minY1);
+  const y1 = maxY1 + pY;
+  
+  const sx = x => m.l + (x - sc.a) / (sc.xMax - sc.a) * (W - m.l - m.r);
+  const sy = y => H - m.b - (y - y0) / (y1 - y0) * (H - m.t - m.b);
 
-            <div class="lg:col-span-7 glass-panel p-6 tilt-element">
-                <div class="flex justify-between items-end mb-4">
-                    <h3 class="text-lg font-semibold text-gray-300">Simulador de Área</h3>
-                    <div class="text-right">
-                        <span class="text-sm text-gray-500 uppercase tracking-wider block">Área Calculada</span>
-                        <span class="text-3xl font-bold text-white" id="val-concept">0.00</span>
-                    </div>
-                </div>
-                <div class="canvas-container interactive-zone">
-                    <canvas id="canvas-concept"></canvas>
-                </div>
-                <input type="range" id="slider-concept" min="0" max="100" value="70" class="interactive-zone">
-            </div>
-        </section>
+  let html=`<g class="grid ax">`;
+  for(let i=0; i<=5; i++){
+    const vx = sc.a + (sc.xMax - sc.a)*i/5;
+    const vy = y0 + (y1 - y0)*i/5;
+    html+=`<line x1="${sx(vx)}" x2="${sx(vx)}" y1="${m.t}" y2="${H-m.b}"/>`;
+    html+=`<text x="${sx(vx)}" y="${H-m.b+16}" text-anchor="middle">${fm(vx,vx%1?1:0)}</text>`;
+    html+=`<line x1="${m.l}" x2="${W-m.r}" y1="${sy(vy)}" y2="${sy(vy)}"/>`;
+    html+=`<text x="${m.l-8}" y="${sy(vy)+4}" text-anchor="end">${fm(vy,vy%1?1:0)}</text>`;
+  }
+  html+=`<text x="${W/2}" y="${H-5}" text-anchor="middle">${sc.xn} (${sc.xu})</text>`;
+  html+=`<text transform="translate(14 ${H/2}) rotate(-90)" text-anchor="middle">${yn} (${yu})</text></g>`;
 
-        <!-- Sección 2: Caso 1 -->
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center reveal">
-            <div class="lg:col-span-7 glass-panel p-6 tilt-element order-2 lg:order-1 relative overflow-hidden">
-                <div class="absolute -top-20 -left-20 w-64 h-64 bg-[#00f0ff] opacity-10 blur-[80px] rounded-full"></div>
-                
-                <div class="flex justify-between items-end mb-4 relative z-10">
-                    <h3 class="text-lg font-semibold text-gray-300">Trabajo Mecánico Total</h3>
-                    <div class="text-right">
-                        <span class="text-sm text-gray-500 uppercase tracking-wider block">Energía (Joules)</span>
-                        <span class="text-3xl font-bold neon-cyan" id="val-work">0.00</span>
-                    </div>
-                </div>
-                <div class="canvas-container interactive-zone relative z-10 border-[#00f0ff]/20">
-                    <canvas id="canvas-work"></canvas>
-                </div>
-                <input type="range" id="slider-work" min="0" max="100" value="50" class="slider-cyan interactive-zone relative z-10">
-            </div>
+  let pathData='';
+  for(let i=0; i<=100; i++){
+    const x = sc.a + (sc.xMax - sc.a)*i/100;
+    pathData+=(i===0?'M':'L')+sx(x).toFixed(2)+' '+sy(fn(x)).toFixed(2);
+  }
 
-            <div class="lg:col-span-5 space-y-8 order-1 lg:order-2">
-                <div class="inline-flex items-center space-x-3 bg-[#00f0ff]/10 border border-[#00f0ff]/30 px-5 py-2 rounded-full">
-                    <div class="w-2.5 h-2.5 bg-[#00f0ff] rounded-full shadow-[0_0_10px_#00f0ff]"></div>
-                    <span class="neon-cyan text-xs font-bold uppercase tracking-[0.2em]">Caso Industrial 01</span>
-                </div>
-                <h2 class="text-4xl md:text-5xl font-bold">Fuerza Variable</h2>
-                <p class="text-gray-400 leading-relaxed text-lg font-light">
-                    En prensas industriales, compresión de resortes o extrusión, la fuerza aplicada cambia respecto a la posición. La integral evalúa el <span class="text-white font-semibold">trabajo total</span> permitiendo calcular requerimientos de motores y consumo energético.
-                </p>
-                <div class="glass-panel p-6 tilt-element">
-                    <p class="text-center text-3xl math-font neon-cyan font-bold">
-                        W = <span class="text-5xl align-middle">∫</span><sub class="text-lg">x₀</sub><sup class="text-lg">x₁</sup> F(x) dx
-                    </p>
-                </div>
-            </div>
-        </section>
+  html+=`<g clip-path="url(#cp${id})">`;
+  if(!isAcum){
+    let dFill = `M${sx(sc.a)} ${sy(0)} `;
+    for(let i=0; i<=100; i++){
+      const x = sc.a + (boundB - sc.a)*i/100;
+      dFill += `L${sx(x)} ${sy(fn(x))} `;
+    }
+    dFill += `L${sx(boundB)} ${sy(0)} Z`;
+    html += `<path d="${dFill}" class="fill-area"/>`;
 
-        <!-- Sección 3: Caso 2 -->
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center reveal pb-20">
-            <div class="lg:col-span-5 space-y-8">
-                <div class="inline-flex items-center space-x-3 bg-[#d946ef]/10 border border-[#d946ef]/30 px-5 py-2 rounded-full">
-                    <div class="w-2.5 h-2.5 bg-[#d946ef] rounded-full shadow-[0_0_10px_#d946ef]"></div>
-                    <span class="neon-magenta text-xs font-bold uppercase tracking-[0.2em]">Caso Industrial 02</span>
-                </div>
-                <h2 class="text-4xl md:text-5xl font-bold">Volumen de Producción</h2>
-                <p class="text-gray-400 leading-relaxed text-lg font-light">
-                    Las líneas de ensamble tienen tasas de producción <span class="math-font text-white">P(t)</span> que varían por fatiga térmica, cuellos de botella o ciclos de máquina. Integrando la tasa respecto al tiempo, se obtiene el inventario acumulado exacto.
-                </p>
-                <div class="glass-panel p-6 tilt-element">
-                    <p class="text-center text-3xl math-font neon-magenta font-bold">
-                        V = <span class="text-5xl align-middle">∫</span><sub class="text-lg">t₀</sub><sup class="text-lg">t₁</sup> P(t) dt
-                    </p>
-                </div>
-            </div>
+    const dx = (boundB - sc.a) / rectN;
+    for(let i=0; i<rectN; i++){
+      const rx = sc.a + i*dx;
+      const ry = fn(rx);
+      const rh = Math.abs(sy(ry) - sy(0));
+      html+=`<rect x="${sx(rx)}" y="${sy(Math.max(0, ry))}" width="${sx(rx+dx)-sx(rx)}" height="${rh}" class="rect"/>`;
+    }
+    html+=`<path d="${pathData}" id="curve1"/>`;
+    html+=`<line x1="${sx(boundB)}" y1="${sy(0)}" x2="${sx(boundB)}" y2="${sy(fn(boundB))}" stroke="var(--ink)" stroke-dasharray="4 4"/>`;
+  } else {
+    html+=`<path d="${pathData}" id="curve2"/>`;
+    html+=`<circle cx="${sx(boundB)}" cy="${sy(fn(boundB)-fn(sc.a))}" r="6" fill="var(--curve)" stroke="var(--card)" stroke-width="2"/>`;
+    html+=`<line x1="${sx(boundB)}" y1="${sy(0)}" x2="${sx(boundB)}" y2="${sy(fn(boundB)-fn(sc.a))}" stroke="var(--curve)" stroke-dasharray="4 4"/>`;
+  }
+  html+=`</g><defs><clipPath id="cp${id}"><rect x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}"/></clipPath></defs>`;
+  svg.innerHTML=html;
+}
 
-            <div class="lg:col-span-7 glass-panel p-6 tilt-element relative overflow-hidden">
-                <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-[#d946ef] opacity-10 blur-[80px] rounded-full"></div>
+function calcRiemann(f, a, b, n){
+  let sum=0; const dx=(b-a)/n;
+  for(let i=0; i<n; i++) sum+=f(a+i*dx)*dx;
+  return sum;
+}
 
-                <div class="flex justify-between items-end mb-4 relative z-10">
-                    <h3 class="text-lg font-semibold text-gray-300">Acumulación de Unidades</h3>
-                    <div class="text-right">
-                        <span class="text-sm text-gray-500 uppercase tracking-wider block">Unidades Totales</span>
-                        <span class="text-3xl font-bold neon-magenta" id="val-production">0.00</span>
-                    </div>
-                </div>
-                <div class="canvas-container interactive-zone relative z-10 border-[#d946ef]/20">
-                    <canvas id="canvas-production"></canvas>
-                </div>
-                <input type="range" id="slider-production" min="0" max="100" value="85" class="slider-magenta interactive-zone relative z-10">
-            </div>
-        </section>
+function draw(){
+  drawSvg('svg1', sc.f, sc.yn, sc.yu, false, B, N);
+  const exact = sc.F(B) - sc.F(sc.a);
+  drawSvg('svg2', x => sc.F(x)-sc.F(sc.a), sc.yn2, sc.yu2, true, B, N);
 
-    </main>
+  const aprox = calcRiemann(sc.f, sc.a, B, N);
+  const err = Math.abs(exact - aprox);
 
-    <script>
-        // --- Custom Cursor Logic ---
-        const cursorDot = document.getElementById('cursor-dot');
-        const cursorAura = document.getElementById('cursor-aura');
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        let auraX = mouseX;
-        let auraY = mouseY;
-        let isDesktop = window.matchMedia("(min-width: 769px)").matches;
+  E('bv').textContent = fm(B,1)+' '+sc.xu;
+  E('nv').textContent = N;
+  E('v_aprox').textContent = fm(aprox,1);
+  E('u_aprox').textContent = sc.yu2;
+  E('v_exact').textContent = fm(exact,1);
+  E('u_exact').textContent = sc.yu2;
+  E('v_err').textContent = fm(err,1)+' '+sc.yu2;
 
-        window.addEventListener('mousemove', (e) => {
-            if(!isDesktop) return;
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            cursorDot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
-            
-            // Interaction states
-            const target = e.target;
-            if (target.closest('.interactive-zone') || target.tagName.toLowerCase() === 'input') {
-                document.body.classList.add('cursor-hover');
-            } else {
-                document.body.classList.remove('cursor-hover');
-            }
-        });
+  E('c_mod').textContent = sc.mod;
+  E('c_ana').textContent = sc.ana(B, exact);
+  E('c_dec').textContent = sc.dec(B, exact);
+}
 
-        function renderCursor() {
-            if(isDesktop) {
-                auraX += (mouseX - auraX) * 0.15;
-                auraY += (mouseY - auraY) * 0.15;
-                cursorAura.style.transform = `translate(${auraX}px, ${auraY}px)`;
-            }
-            requestAnimationFrame(renderCursor);
-        }
-        renderCursor();
+E('b').oninput=e=>{stopAll(); B=sc.a+(e.target.value/1000)*(sc.xMax-sc.a); draw();};
+E('n').oninput=e=>{stopAll(); N=parseInt(e.target.value); draw();};
 
-        window.addEventListener('resize', () => {
-            isDesktop = window.matchMedia("(min-width: 769px)").matches;
-        });
+function stopAll(){
+  if(animN){cancelAnimationFrame(animN); animN=null;}
+  if(animB){cancelAnimationFrame(animB); animB=null;}
+  E('playN').textContent='Animar Precisión (n → ∞)';
+  E('playB').textContent='Animar Acumulación';
+}
 
-        // --- Particle Background Logic ---
-        const canvasBg = document.getElementById('bg-canvas');
-        const ctxBg = canvasBg.getContext('2d', { alpha: false });
-        let particles = [];
-        
-        function resizeBg() {
-            canvasBg.width = window.innerWidth;
-            canvasBg.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeBg);
-        resizeBg();
+E('playN').onclick=()=>{
+  if(animN){stopAll(); return;}
+  stopAll(); E('playN').textContent='Detener Precisión';
+  const T=3000, t0=performance.now();
+  const step=t=>{
+    const p=Math.min(1,(t-t0)/T);
+    N = Math.floor(1 + p*99);
+    E('n').value=N; draw();
+    if(p<1) animN=requestAnimationFrame(step); else stopAll();
+  };
+  animN=requestAnimationFrame(step);
+};
 
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvasBg.width;
-                this.y = Math.random() * canvasBg.height;
-                this.vx = (Math.random() - 0.5) * 0.5;
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.baseRadius = Math.random() * 1.5 + 0.5;
-            }
-            update() {
-                // Mouse repel logic
-                const dx = mouseX - this.x;
-                const dy = mouseY - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                
-                if (dist < 150 && isDesktop) {
-                    const force = (150 - dist) / 150;
-                    this.vx -= (dx / dist) * force * 0.5;
-                    this.vy -= (dy / dist) * force * 0.5;
-                }
+E('playB').onclick=()=>{
+  if(animB){stopAll(); return;}
+  stopAll(); E('playB').textContent='Detener Acumulación';
+  const T=4000, t0=performance.now();
+  const step=t=>{
+    const p=Math.min(1,(t-t0)/T);
+    B = sc.a + p*(sc.xMax-sc.a);
+    E('b').value=(B/sc.xMax)*1000; draw();
+    if(p<1) animB=requestAnimationFrame(step); else stopAll();
+  };
+  animB=requestAnimationFrame(step);
+};
 
-                // Friction & Speed limits
-                this.vx *= 0.98;
-                this.vy *= 0.98;
-                
-                // Add base drift if stopped
-                if(Math.abs(this.vx) < 0.2) this.vx += (Math.random()-0.5)*0.1;
-                if(Math.abs(this.vy) < 0.2) this.vy += (Math.random()-0.5)*0.1;
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Bounce edges
-                if (this.x < 0 || this.x > canvasBg.width) this.vx *= -1;
-                if (this.y < 0 || this.y > canvasBg.height) this.vy *= -1;
-            }
-            draw() {
-                ctxBg.beginPath();
-                ctxBg.arc(this.x, this.y, this.baseRadius, 0, Math.PI * 2);
-                ctxBg.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctxBg.fill();
-            }
-        }
-
-        for (let i = 0; i < 70; i++) particles.push(new Particle());
-
-        function animateBg() {
-            ctxBg.fillStyle = '#030305';
-            ctxBg.fillRect(0, 0, canvasBg.width, canvasBg.height);
-            
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-                
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (dist < 120) {
-                        ctxBg.beginPath();
-                        const alpha = 0.15 - (dist / 120) * 0.15;
-                        ctxBg.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
-                        ctxBg.lineWidth = 0.8;
-                        ctxBg.moveTo(particles[i].x, particles[i].y);
-                        ctxBg.lineTo(particles[j].x, particles[j].y);
-                        ctxBg.stroke();
-                    }
-                }
-            }
-            requestAnimationFrame(animateBg);
-        }
-        animateBg();
-
-        // --- 3D Tilt Effect ---
-        const tiltElements = document.querySelectorAll('.tilt-element');
-        tiltElements.forEach(el => {
-            el.addEventListener('mousemove', (e) => {
-                if(!isDesktop) return;
-                const rect = el.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -4;
-                const rotateY = ((x - centerX) / centerX) * 4;
-                el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-            });
-            el.addEventListener('mouseleave', () => {
-                el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
-            });
-        });
-
-        // --- Scroll Reveal ---
-        const revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                }
-            });
-        }, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
-        
-        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-
-        // --- Math Simulators Engine ---
-        function createSimulator(config) {
-            const canvas = document.getElementById(config.canvasId);
-            const ctx = canvas.getContext('2d');
-            const slider = document.getElementById(config.sliderId);
-            const display = document.getElementById(config.displayId);
-            
-            function render() {
-                // Responsive dimensions
-                canvas.width = canvas.parentElement.clientWidth;
-                canvas.height = canvas.parentElement.clientHeight;
-                const w = canvas.width;
-                const h = canvas.height;
-                const paddingY = 40;
-                const paddingX = 20;
-                
-                ctx.clearRect(0, 0, w, h);
-
-                // Grid & Axes
-                ctx.beginPath();
-                ctx.moveTo(paddingX, paddingY / 2);
-                ctx.lineTo(paddingX, h - paddingY);
-                ctx.lineTo(w - paddingX, h - paddingY);
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-
-                // Compute points
-                const points = [];
-                const steps = 150; // Resolution
-                const domain = config.domain;
-                let maxF = 0;
-
-                // Find max Y for scaling
-                for (let i = 0; i <= steps; i++) {
-                    const x = domain[0] + (i / steps) * (domain[1] - domain[0]);
-                    const y = config.func(x);
-                    if(y > maxF) maxF = y;
-                }
-
-                const scaleX = (w - paddingX * 2) / (domain[1] - domain[0]);
-                const scaleY = (h - paddingY * 1.5) / (maxF === 0 ? 1 : maxF);
-
-                for (let i = 0; i <= steps; i++) {
-                    const realX = domain[0] + (i / steps) * (domain[1] - domain[0]);
-                    const realY = config.func(realX);
-                    points.push({
-                        px: paddingX + (realX - domain[0]) * scaleX,
-                        py: h - paddingY - (realY * scaleY),
-                        realX: realX,
-                        realY: realY
-                    });
-                }
-
-                // Current Slider Limit
-                const sliderVal = parseFloat(slider.value) / 100;
-                const currentLimitX = domain[0] + sliderVal * (domain[1] - domain[0]);
-                
-                // Draw Area (Integral)
-                ctx.beginPath();
-                ctx.moveTo(points[0].px, h - paddingY);
-                
-                let area = 0;
-                let lastValidPx = points[0].px;
-
-                for (let i = 0; i < points.length; i++) {
-                    if (points[i].realX <= currentLimitX) {
-                        ctx.lineTo(points[i].px, points[i].py);
-                        lastValidPx = points[i].px;
-                        // Riemann sum calculation
-                        if (i > 0) {
-                            const dx = points[i].realX - points[i-1].realX;
-                            const avgY = (points[i].realY + points[i-1].realY) / 2;
-                            area += dx * avgY;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                ctx.lineTo(lastValidPx, h - paddingY);
-                ctx.closePath();
-                
-                // Gradient Fill
-                const rgb = config.colorRgb;
-                const grad = ctx.createLinearGradient(0, 0, 0, h);
-                grad.addColorStop(0, `rgba(${rgb}, 0.5)`);
-                grad.addColorStop(1, `rgba(${rgb}, 0.05)`);
-                ctx.fillStyle = grad;
-                ctx.fill();
-
-                // Draw Function Line
-                ctx.beginPath();
-                ctx.moveTo(points[0].px, points[0].py);
-                for (let i = 1; i < points.length; i++) {
-                    ctx.lineTo(points[i].px, points[i].py);
-                }
-                ctx.strokeStyle = `rgb(${rgb})`;
-                ctx.lineWidth = 3;
-                ctx.stroke();
-
-                // Draw Limit Line
-                if (sliderVal > 0) {
-                    ctx.beginPath();
-                    ctx.moveTo(lastValidPx, h - paddingY);
-                    ctx.lineTo(lastValidPx, paddingY / 2);
-                    ctx.strokeStyle = '#fff';
-                    ctx.setLineDash([4, 4]);
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
-
-                // Update Display
-                display.textContent = (area * config.multiplier).toFixed(1);
-            }
-
-            slider.addEventListener('input', render);
-            window.addEventListener('resize', render);
-            
-            // Initial render delay to ensure layout is complete
-            setTimeout(render, 100);
-        }
-
-        // Initialize Simulators
-        
-        // 1. Concept: Parabola
-        createSimulator({
-            canvasId: 'canvas-concept',
-            sliderId: 'slider-concept',
-            displayId: 'val-concept',
-            domain: [0, 10],
-            func: (x) => -0.15 * Math.pow(x - 5, 2) + 5,
-            colorRgb: '255, 255, 255',
-            multiplier: 1
-        });
-
-        // 2. Work: Ascending fluctuating force
-        createSimulator({
-            canvasId: 'canvas-work',
-            sliderId: 'slider-work',
-            displayId: 'val-work',
-            domain: [0, 10],
-            func: (x) => (x * 1.5) + Math.sin(x * 1.5) * 2 + 3,
-            colorRgb: '0, 240, 255', // Cyan
-            multiplier: 10 // scale for visual realistic numbers
-        });
-
-        // 3. Production: Oscillating rate + linear growth
-        createSimulator({
-            canvasId: 'canvas-production',
-            sliderId: 'slider-production',
-            displayId: 'val-production',
-            domain: [0, 24], // 24 hours
-            func: (x) => 15 + Math.cos(x * 0.8) * 5 + (x * 0.5),
-            colorRgb: '217, 70, 239', // Magenta
-            multiplier: 5
-        });
-
-    </script>
+pick(0);
+</script>
 </body>
 </html>
